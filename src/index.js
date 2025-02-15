@@ -1,8 +1,9 @@
 import './styles.scss';
 import 'bootstrap';
+import i18next from 'i18next';
 import * as yup from 'yup';
-import onChange from 'on-change';
 import render from './render.js';
+import resources from './locales/index.js';
 
 const validate = (link, links) => {
   const schema = yup.string()
@@ -16,31 +17,53 @@ const app = () => {
     form: document.querySelector('.rss-form'),
     input: document.querySelector('input'),
     button: document.querySelector('button'),
+    feedback: document.querySelector('.feedback'),
   };
-  const initialState = {
+
+  const defaultLang = 'ru';
+
+  const state = {
     currentLink: '',
     links: [],
     validate: false,
-    errors: {},
+    errors: '',
   };
-  const state = onChange(initialState, render(initialState, elements));
+
+  yup.setLocale({
+    mixed: {
+      notOneOf: 'errors.validation.notMatchLink',
+    },
+    string: {
+      url: 'errors.validation.notValidUrl',
+    },
+  });
+
+  const i18n = i18next.createInstance();
+  i18n.init({
+    lng: defaultLang,
+    debug: false,
+    resources,
+  });
+
+  const watchedState = render(state, elements, i18n);
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
     const { value } = elements.input;
-    state.currentLink = value;
-    state.validate = true;
-    validate(value, initialState.links)
+    watchedState.currentLink = value;
+    validate(value, state.links)
       .then((response) => {
         console.log('the link is valid');
-        state.links.push(response);
-        state.errors = null;
+        watchedState.links.push(response);
+        watchedState.validate = true;
+        state.errors = '';
+        console.log(state);
       })
       .catch((error) => {
         console.log('the link is not valid');
-        state.errors = error.errors;
+        watchedState.errors = error.message;
         state.validate = false;
+        console.log(state);
       });
-    console.log(initialState);
   });
 };
 
