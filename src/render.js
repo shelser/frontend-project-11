@@ -2,7 +2,7 @@ import onChange from 'on-change';
 
 export default (state, elements, i18n) => {
   const {
-    input, feedback, posts, feeds, button,
+    input, feedback, posts, feeds, button, modal,
   } = elements;
 
   const handleWait = () => {
@@ -81,7 +81,7 @@ export default (state, elements, i18n) => {
       elA.setAttribute('data-id', item.id);
       elA.setAttribute('target', '_blank');
       elA.setAttribute('rel', 'noopener');
-      elA.classList.add('fw-bold');
+      elA.className = state.ui.seenPost.postsID.includes(item.id) ? 'fw-normal link-secondary' : 'fw-bold';
       elA.textContent = item.title;
       const elBut = document.createElement('button');
       elBut.setAttribute('type', 'button');
@@ -96,25 +96,50 @@ export default (state, elements, i18n) => {
     divPosts.append(ul);
   };
 
-  const watchedState = onChange(state, (path) => {
+  const renderModal = () => {
+    const post = state.rssFlow.posts.find((p) => p.id === state.modalCurrentPost.postID);
+    console.log(post);
+    modal.querySelector('h5').textContent = post.title;
+    modal.querySelector('.modal-body').textContent = post.description;
+    modal.querySelector('a').href = post.link;
+    const elA = posts.querySelectorAll('a');
+    console.log(elA);
+    elA.forEach((a) => {
+      const aID = a.dataset.id;
+      if (!state.ui.seenPost.postsID.includes(aID)) {
+        return;
+      }
+      a.classList.remove('fw-bold');
+      a.classList.add('fw-normal', 'link-secondary');
+    });
+  };
+
+  const watchedState = onChange(state, (path, value) => {
     console.log(path);
+    console.log(value);
     switch (path) {
-      case 'validate':
-        handleValidTrue();
-        break;
-      case 'errors':
-        handleError();
-        break;
-      case 'rssFlowLoad':
-        renderFeeds();
-        renderPosts();
-        console.log(state);
-        break;
-      case 'waitToLoad':
-        handleWait();
+      case 'loadProcess.type':
+        switch (value) {
+          case 'sending':
+            handleWait();
+            break;
+          case 'finished':
+            handleValidTrue();
+            renderPosts();
+            renderFeeds();
+            break;
+          case 'failed':
+            handleError();
+            break;
+          default:
+            break;
+        }
         break;
       case 'rssFlow.posts':
         renderPosts();
+        break;
+      case 'ui.seenPost.postsID':
+        renderModal();
         break;
       default:
         break;

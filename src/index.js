@@ -63,21 +63,30 @@ const app = () => {
     feedback: document.querySelector('.feedback'),
     posts: document.querySelector('.posts'),
     feeds: document.querySelector('.feeds'),
+    viewButton: document.querySelector('li > button'),
+    modal: document.querySelector('#modal'),
   };
 
   const defaultLang = 'ru';
 
   const state = {
-    currentLink: '',
     links: [],
-    validate: false,
+    loadProcess: {
+      type: 'filling',
+    },
     errors: '',
     rssFlow: {
       feeds: [],
       posts: [],
     },
-    rssFlowLoad: false,
-    waitToLoad: false,
+    modalCurrentPost: {
+      postID: '',
+    },
+    ui: {
+      seenPost: {
+        postsID: [],
+      },
+    },
   };
 
   yup.setLocale({
@@ -100,12 +109,9 @@ const app = () => {
   elements.form.addEventListener('submit', (e) => {
     e.preventDefault();
     state.errors = '';
-    state.rssFlowLoad = false;
-    state.validate = false;
-    watchedState.waitToLoad = true;
+    watchedState.loadProcess.type = 'sending';
     const { value } = elements.input;
-    watchedState.currentLink = value;
-    validate(state.currentLink, state.links)
+    validate(value, state.links)
       .then((response) => getXml(response))
       .then((response) => parser(response.contents))
       .then((doc) => {
@@ -130,20 +136,21 @@ const app = () => {
             feedId, id, title, link, description,
           });
         });
-        watchedState.rssFlowLoad = true;
-        watchedState.validate = true;
-        state.waitToLoad = false;
         state.links.push(value);
+        watchedState.loadProcess.type = 'finished';
       })
       .catch((error) => {
         console.log('the link is not valid');
-        watchedState.errors = error.message;
-        state.validate = false;
-        state.rssFlowLoad = false;
-        state.waitToLoad = false;
+        state.errors = error.message;
+        watchedState.loadProcess.type = 'failed';
         console.log(state);
       });
     console.log(state);
+    elements.posts.addEventListener('click', (ev) => {
+      const currentID = ev.target.dataset.id;
+      state.modalCurrentPost.postID = currentID;
+      watchedState.ui.seenPost.postsID.push(currentID);
+    });
   });
   startRSSUpdate(watchedState);
 };
