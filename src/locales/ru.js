@@ -14,6 +14,7 @@ export default {
       },
       notValidRss: 'Ресурс не содержит валидный RSS',
       networkError: 'Ошибка сети',
+      updateError: 'Ошибка обновления RSS',
     },
   },
 };

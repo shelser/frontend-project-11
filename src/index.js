@@ -15,13 +15,44 @@ const validate = (link, links) => {
   return schema.validate(link);
 };
 
-const getXml = (link) => {
-  const request = axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${link}`)
-    .then((response) => response)
-    .catch(() => {
-      throw new Error('errors.networkError');
-    });
-  return request;
+const getXml = (link) => axios.get(`https://allorigins.hexlet.app/get?disableCache=true&url=${link}`)
+  .then((response) => response.data)
+  .catch(() => {
+    throw new Error('errors.networkError');
+  });
+
+const updateRss = (state) => {
+  state.links.forEach((li) => {
+    getXml(li)
+      .then((response) => parser(response.contents))
+      .then((doc) => {
+        console.log(doc);
+        const items = doc.querySelectorAll('item');
+        const loadedTitle = state.rssFlow.posts.map((post) => post.title);
+        items.forEach((item) => {
+          const title = item.querySelector('title').textContent;
+          if (loadedTitle.includes(title)) {
+            return;
+          }
+          const id = _.uniqueId();
+          const link = item.querySelector('link').textContent;
+          const description = item.querySelector('description').textContent;
+          state.rssFlow.posts.push({
+            id, title, link, description,
+          });
+        });
+      })
+      .catch(() => console.log(i18next.t('errors.updateError')));
+  });
+};
+
+const startRSSUpdate = (state) => {
+  const update = () => {
+    updateRss(state);
+    setTimeout(update, 5000);
+  };
+
+  update();
 };
 
 const app = () => {
@@ -70,12 +101,13 @@ const app = () => {
     e.preventDefault();
     state.errors = '';
     state.rssFlowLoad = false;
+    state.validate = false;
     watchedState.waitToLoad = true;
     const { value } = elements.input;
     watchedState.currentLink = value;
-    validate(value, state.links)
+    validate(state.currentLink, state.links)
       .then((response) => getXml(response))
-      .then((response) => parser(response.data.contents))
+      .then((response) => parser(response.contents))
       .then((doc) => {
         console.log(doc);
         const parserError = doc.querySelector('parsererror');
@@ -86,7 +118,7 @@ const app = () => {
         const feedId = _.uniqueId();
         const titleFeed = feeds.querySelector('title').textContent;
         const descriptionFeed = feeds.querySelector('description').textContent;
-        watchedState.rssFlow.feeds.push({ feedId, titleFeed, descriptionFeed });
+        state.rssFlow.feeds.push({ feedId, titleFeed, descriptionFeed });
         const items = doc.querySelectorAll('item');
         console.log(items);
         items.forEach((item) => {
@@ -94,7 +126,7 @@ const app = () => {
           const title = item.querySelector('title').textContent;
           const link = item.querySelector('link').textContent;
           const description = item.querySelector('description').textContent;
-          watchedState.rssFlow.posts.push({
+          state.rssFlow.posts.push({
             feedId, id, title, link, description,
           });
         });
@@ -111,7 +143,9 @@ const app = () => {
         state.waitToLoad = false;
         console.log(state);
       });
+    console.log(state);
   });
+  startRSSUpdate(watchedState);
 };
 
 app();

@@ -108,9 +108,13 @@ export default (state, elements, i18n) => {
       case 'rssFlowLoad':
         renderFeeds();
         renderPosts();
+        console.log(state);
         break;
       case 'waitToLoad':
         handleWait();
+        break;
+      case 'rssFlow.posts':
+        renderPosts();
         break;
       default:
         break;
