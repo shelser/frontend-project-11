@@ -98,12 +98,10 @@ export default (state, elements, i18n) => {
 
   const renderModal = () => {
     const post = state.rssFlow.posts.find((p) => p.id === state.modalCurrentPost.postID);
-    console.log(post);
     modal.querySelector('h5').textContent = post.title;
     modal.querySelector('.modal-body').textContent = post.description;
     modal.querySelector('a').href = post.link;
     const elA = posts.querySelectorAll('a');
-    console.log(elA);
     elA.forEach((a) => {
       const aID = a.dataset.id;
       if (!state.ui.seenPost.postsID.includes(aID)) {
@@ -115,8 +113,6 @@ export default (state, elements, i18n) => {
   };
 
   const watchedState = onChange(state, (path, value) => {
-    console.log(path);
-    console.log(value);
     switch (path) {
       case 'loadProcess.type':
         switch (value) {

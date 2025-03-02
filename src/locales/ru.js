@@ -9,6 +9,7 @@ export default {
     viewing: 'Просмотр',
     errors: {
       validation: {
+        required: 'Не должно быть пустым',
         notMatchLink: 'RSS уже существует',
         notValidUrl: 'Ссылка должна быть валидным URL',
       },
