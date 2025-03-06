@@ -24,21 +24,16 @@ const getXml = (link) => axios.get(`https://allorigins.hexlet.app/get?disableCac
 const updateRss = (state) => {
   state.links.forEach((li) => {
     getXml(li)
-      .then((response) => parser(response.contents))
-      .then((doc) => {
-        const items = doc.querySelectorAll('item');
+      .then((response) => {
+        const content = parser(response.contents);
+        const { posts } = content;
         const loadedTitle = state.rssFlow.posts.map((post) => post.title);
-        items.forEach((item) => {
-          const title = item.querySelector('title').textContent;
-          if (loadedTitle.includes(title)) {
+        posts.forEach((p) => {
+          if (loadedTitle.includes(p.title)) {
             return;
           }
           const id = _.uniqueId();
-          const link = item.querySelector('link').textContent;
-          const description = item.querySelector('description').textContent;
-          state.rssFlow.posts.push({
-            id, title, link, description,
-          });
+          state.rssFlow.posts.push({ id, ...p });
         });
       })
       .catch(() => console.log(i18next.t('errors.updateError')));
@@ -113,27 +108,15 @@ export default () => {
     const { value } = elements.input;
     validate(value, state.links)
       .then((response) => getXml(response))
-      .then((response) => parser(response.contents))
-      .then((doc) => {
-        const parserError = doc.querySelector('parsererror');
-        if (parserError) {
-          throw new Error('errors.notValidRss');
-        }
-        const feeds = doc.querySelector('channel');
-        const feedId = _.uniqueId();
-        const titleFeed = feeds.querySelector('title').textContent;
-        const descriptionFeed = feeds.querySelector('description').textContent;
-        state.rssFlow.feeds.push({ feedId, titleFeed, descriptionFeed });
-        const items = doc.querySelectorAll('item');
-        items.forEach((item) => {
+      .then((response) => {
+        const content = parser(response.contents);
+        const { feed, posts } = content;
+        state.rssFlow.feeds.push(feed);
+        const uploadedPosts = posts.map((post) => {
           const id = _.uniqueId();
-          const title = item.querySelector('title').textContent;
-          const link = item.querySelector('link').textContent;
-          const description = item.querySelector('description').textContent;
-          state.rssFlow.posts.push({
-            feedId, id, title, link, description,
-          });
+          return { id, ...post };
         });
+        state.rssFlow.posts.push(...uploadedPosts);
         state.links.push(value);
         watchedState.loadProcess.type = 'finished';
       })
